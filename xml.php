@@ -13,9 +13,9 @@
 # XML_unserialize: takes raw XML as a parameter (a string)
 # and returns an equivalent PHP data structure
 ###################################################################################
-function & XML_unserialize(&$xml){
-	$xml_parser = &new XML();
-	$data = &$xml_parser->parse($xml);
+function & XML_unserialize($xml){
+	$xml_parser = new XML();
+	$data = $xml_parser->parse($xml);
 	$xml_parser->destruct();
 	return $data;
 }

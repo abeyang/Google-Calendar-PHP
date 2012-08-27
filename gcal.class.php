@@ -1,13 +1,12 @@
 <?php
 /* 
  * Google Calendar PHP Framework
- * version 2.0.0 <alpha>
+ * version 2.0.1 <alpha>
  * 
  * gCal PHP Framework is freely distributable under the terms of an MIT-style license.                                                                              
  * Please visit [github] for more details.  
  *
  * =Options=
- * 'cals' = calendar var; possible values:
  * 'shows' = with respective calendar, reveal:
  *		all - include private events
  *		normal - show events with '!' prepended to titles (same as '', or null)
@@ -35,9 +34,12 @@ class gCal {
 	// ----------------------------------------------------------------------------------
 	// variables
 	// ----------------------------------------------------------------------------------
-	var $version = 1.1;
+	var $version = '2.0.1';
 	
-	var $calendars;
+	var $name;				// name of calendar; for debug purposes only ($NAME in CONFIG.php)
+	var $userid;			// need this to pull specific calendar from Google ($USERID in CONFIG.php)
+	var $magiccookie;		// need this to pull specific calendar from Google ($MAGICCOOKIE in CONFIG.php)
+
 	var $shows;
 	var $tags;
 	var $events;			// ultimately, need to fill this array
@@ -50,29 +52,35 @@ class gCal {
 	var $cal_endtime;		// $timeend
 	var $cal_windowsec;		// $windowsec
 
-	var $gcal_suffix = 'T00:00:00-08:00';	// $gcalsuffix (-0800 = PST)
-	var $gcal_startmin;						// $startmin
-	var $gcal_startmax;						// $startmax
+	var $gcal_suffix;		// which standard time to use ($STANDARDTIME in CONFIG.php)
+	var $gcal_startmin;		// $startmin
+	var $gcal_startmax;		// $startmax
 	
 	// misc
-	var $id = 0;				// for unique div id's
+	var $id = 0;			// for unique div id's / AY: not sure if this is still necessary...
 	var $debug;
 	var $url = 'http://www.google.com/calendar/feeds/';
 	
 	// ----------------------------------------------------------------------------------
 	// initialize
 	// ----------------------------------------------------------------------------------
-	function gCal($cals, $options = array()) {
+	function gCal($options = array()) {
+		$this->name = $GLOBALS['NAME'];
+		$this->userid = $GLOBALS['USERID'];
+		$this->magiccookie = $GLOBALS['MAGICCOOKIE'];
+		if ($GLOBALS['STANDARDTIME'])
+			$this->gcal_suffix = 'T00:00:00' . $GLOBALS['STANDARDTIME'];
+		else $this->gcal_suffix = 'T00:00:00-08:00';		// default is PST (-08:00)
+	
 		// error check
-		if (!$cals) {
-			echo 'Calendars not supplied';
+		if (!$this->name || !$this->magiccookie) {
+			echo 'Calendars not supplied. Please supply a userid and/or magiccookie in the CONFIG.php file';
 			return;
 		}
 		
 		$this->debug = $options['debug'];
 
 		// set calendars, shows, and tags arrays
-		$this->calendars = explode(',', $cals);
 		$this->shows = explode(',', $options['shows']);
 		$this->tags = explode(',', $options['tags']);
 	
@@ -100,12 +108,9 @@ class gCal {
 	// ----------------------------------------------------------------------------------
 	
 	// eventarray is an array of events (that are associative arrays)
-	function getCalendar($calname, $show = '', $tagstring = '') {
+	function getCalendar($show = '', $tagstring = '') {
 
-		$userid = $GLOBALS['USERID'];
-		$magiccookie = $GLOBALS['MAGICCOOKIE'];
-
-		$urlstring = $this->url.$userid.'/private-'.$magiccookie.'/full?start-min='.$this->gcal_startmin.'&start-max='.$this->gcal_startmax;
+		$urlstring = $this->url.$this->userid.'/private-'.$this->magiccookie.'/full?start-min='.$this->gcal_startmin.'&start-max='.$this->gcal_startmax;
 
 		if ($this->debug) echo '<br />' . $urlstring;
 		$xml = file_get_contents($urlstring);
@@ -116,22 +121,22 @@ class gCal {
 		$data = XML_unserialize($xml);
 
 		if ($this->debug) {
-			echo "<p /><strong>$calname</strong><br />$urlstring<br />show: $show <br />";
+			echo "<p /><strong>$this->name</strong><br />$urlstring<br />show: $show <br />";
 		}
 
 		// zero entries
 		if (!$data['feed']['entry']) return;
 		// one entry
-		else if (!is_array($data['feed']['entry'][0])) $this->getEvent($data['feed']['entry'], $calname, $show, $tagstring);
+		else if (!is_array($data['feed']['entry'][0])) $this->getEvent($data['feed']['entry'], $show, $tagstring);
 		// two or more entries
 		else {
 			foreach($data['feed']['entry'] as $xmlevent) {
-				$this->getEvent($xmlevent, $calname, $show, $tagstring);
+				$this->getEvent($xmlevent, $show, $tagstring);
 			}
 		}
 	}  // end getCalendar
 
-	function getEvent($xmlevent, $calname, $show, $tagstring) {
+	function getEvent($xmlevent, $show, $tagstring) {
 		//global $timestart, $timeend, $eventarray, $exceptionarray, $textile;
 		$showevent = true;
 
@@ -266,7 +271,6 @@ class gCal {
 				'isnormal' 	=> $isnormal, 
 				'isfeatured' 	=> $isfeatured, 
 				'tag' 		=> $eventtag, 
-				'cal' 		=> $calname,
 				'status'	=> $status, 
 				'showevent' 	=> $showevent
 			);
@@ -325,17 +329,7 @@ class gCal {
 	
 	function main() {
 		// fill array
-		$this->getCalendar($NAME, $showcal, $this->tags[$i]);
-		
-/*
-		for ($i=0; $i<count($this->calendars); $i++) {
-			$showcal = is_null($this->shows[$i]) ? '' : $this->shows[$i];
-			// reset array of exceptions; only local to its resepctive calendar
-			if ($this->exceptions) unset($this->exceptions);	
-			// get calendar info
-			$this->getCalendar($this->calendars[$i], $showcal, $this->tags[$i]);
-		}
-*/
+		$this->getCalendar($showcal, $this->tags[$i]);
 
 		// sort all events (across all calendars)
 		if ($this->events) usort($this->events, sortByTime);		
