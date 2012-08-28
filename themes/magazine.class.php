@@ -1,8 +1,7 @@
 <?php
 /* 
  * gCal Extension - Magazine Theme
- * Abe Yang (c) 2011
- * http://code.google.com/p/gcal-php-framework/
+ * Abe Yang (c) 2012
 /* ---------------------------------------------------------------------------------- */
 
 // precondition: events (array) must be fed in to desired function
@@ -38,6 +37,7 @@ class gCalWeb extends gCal {
 		$displaystring .= '<div class="gw-post slickpanel">';
 
 		foreach($events as $event) {
+
 			$this_id = $event['cal'].'_'.$event['id'];
 			$start = $event['starttime'];
 			// check for new dates
@@ -54,7 +54,6 @@ class gCalWeb extends gCal {
 			$displaystring .=  '</div>'; 
 			$displaystring .= '</div>'; // close (.gw-date or .gw-event) 
 			
-
 		} // end foreach
 		
 		$displaystring .= '</div>'; // close .gw-post

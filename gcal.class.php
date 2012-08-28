@@ -1,10 +1,10 @@
 <?php
 /* 
  * Google Calendar PHP Framework
- * version 2.0.1 <alpha>
+ * version 2.0.2 <alpha>
  * 
  * gCal PHP Framework is freely distributable under the terms of an MIT-style license.                                                                              
- * Please visit [github] for more details.  
+ * Please visit https://github.com/abeyang/Google-Calendar-PHP for more details.  
  *
  * =Options=
  * 'shows' = with respective calendar, reveal:
@@ -34,7 +34,7 @@ class gCal {
 	// ----------------------------------------------------------------------------------
 	// variables
 	// ----------------------------------------------------------------------------------
-	var $version = '2.0.1';
+	var $version = '2.0.2';
 	
 	var $name;				// name of calendar; for debug purposes only ($NAME in CONFIG.php)
 	var $userid;			// need this to pull specific calendar from Google ($USERID in CONFIG.php)
@@ -59,6 +59,8 @@ class gCal {
 	// misc
 	var $id = 0;			// for unique div id's / AY: not sure if this is still necessary...
 	var $debug;
+	var $debugspeed;
+	var $debugspeed_start;
 	var $url = 'http://www.google.com/calendar/feeds/';
 	
 	// ----------------------------------------------------------------------------------
@@ -73,15 +75,17 @@ class gCal {
 		else $this->gcal_suffix = 'T00:00:00-08:00';		// default is PST (-08:00)
 	
 		// error check
-		if (!$this->name || !$this->magiccookie) {
+		if (!$this->userid || !$this->magiccookie) {
 			echo 'Calendars not supplied. Please supply a userid and/or magiccookie in the CONFIG.php file';
 			return;
 		}
 		
 		$this->debug = $options['debug'];
+		$this->debugspeed = $options['debugspeed'];
+		if ($this->debugspeed) $this->debugspeed_start = microtime(true);
 
 		// set calendars, shows, and tags arrays
-		$this->shows = explode(',', $options['shows']);
+		$this->shows = $options['shows'];
 		$this->tags = explode(',', $options['tags']);
 	
 		if ($this->debug) echo 'tags: '.$options['tags'].' <br />';
@@ -108,7 +112,7 @@ class gCal {
 	// ----------------------------------------------------------------------------------
 	
 	// eventarray is an array of events (that are associative arrays)
-	function getCalendar($show = '', $tagstring = '') {
+	function getCalendar($tagstring = '') {
 
 		$urlstring = $this->url.$this->userid.'/private-'.$this->magiccookie.'/full?start-min='.$this->gcal_startmin.'&start-max='.$this->gcal_startmax;
 
@@ -119,6 +123,8 @@ class gCal {
 			return false;
 		}
 		$data = XML_unserialize($xml);
+		
+		$show = $this->shows;
 
 		if ($this->debug) {
 			echo "<p /><strong>$this->name</strong><br />$urlstring<br />show: $show <br />";
@@ -152,7 +158,10 @@ class gCal {
 				$title = substr($title, 1);
 			}
 		}
+
 		// check public/important events
+		// if $showevent is false, but $debug is turned on, we'll keep it in the array
+		// otherwise, we won't store it at all
 		if (($show == '' || $show == 'normal') && !$isnormal) {
 			$showevent = false;
 			if (!$this->debug) return;
@@ -329,7 +338,7 @@ class gCal {
 	
 	function main() {
 		// fill array
-		$this->getCalendar($showcal, $this->tags[$i]);
+		$this->getCalendar($this->tags[$i]);
 
 		// sort all events (across all calendars)
 		if ($this->events) usort($this->events, sortByTime);		
@@ -337,6 +346,11 @@ class gCal {
 		if ($this->debug) {
 			echo '<p />';
 			print_r($this->events);
+		}
+		
+		if ($this->debugspeed) {
+			$finaltime = microtime(true) - $this->debugspeed_start;
+			echo '<p /> TOTAL TIME: ' . $finaltime;
 		}
 		
 	} // end main

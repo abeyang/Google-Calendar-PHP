@@ -13,16 +13,17 @@ require('themes/magazine.class.php');
 
 $dir = getcwd();
 $shows = 'everything';
-// $shows = '';
+$shows = 'normal';
 //$tags = 'kairos-kairos2-kairos4';
 
 $startdate = '';
-$startdate = '2012-08-30';
-$startdate = '2012-09-17';
+/* $startdate = '2012-08-30'; */
+/* $startdate = '2012-09-17'; */
 $numdays = 60;
 
 $gcal = new gCalWeb(array(
-	'debug' => 1,
+	'debug' => 0,
+	'debugspeed' => 1,
 	'shows' => $shows,
 	'tags' => $tags,
 	'startdate' => $startdate,
