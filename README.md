@@ -24,14 +24,16 @@ This is where Google Calendar PHP comes in. It's a framework that takes in the X
 
 ## Usage
 
-+ For developers (to be written)
-+ For the average user (to be written)
++ [Installing framework onto your site] (mainly for developers)
++ How to use Google Calendar with the framework: read about the [special syntax]
 
 ---
 
 ## Addendum
 
-This is a version 2.0 update to the [original framework], hosted on Google Code. The 1.1 version allowed managing of multiple calendars (whereas 2.0 does not). In this update, I've tried to make the calendar load faster and more efficiently (while adding additional features). Thus, if you can't live without being able to manage multiple calendars, then please download the 1.1 version.
+This is a version 2.0 update to the [original framework], hosted on Google Code. Themar 1.1 version allowed managing of multiple calendars (whereas 2.0 does not). In this update, I've tried to make the calendar load faster and more efficiently (while adding additional features). Thus, if you can't live without being able to manage multiple calendars, then please download the 1.1 version.
 
 [church]: http://gracepointonline.org/
 [original framework]: http://code.google.com/p/gcal-php-framework/
+[special syntax]: https://github.com/abeyang/Google-Calendar-PHP/wiki/Syntax-for-Google-Calendar
+[Installing framework onto your site]: https://github.com/abeyang/Google-Calendar-PHP/wiki/Installing-framework
