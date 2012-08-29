@@ -13,32 +13,22 @@
  *
 /* ---------------------------------------------------------------------------------- */
 
-require_once('gcal.class.php');
+class Magazine extends gCal {
 
-class gCalWeb extends gCal {
-	// rss feeds
-	var $rsstitle;
-	var $rssdesc;
-	var $rsslink;
-
-	function gCalWeb($cals, $options = array()) {
-		parent :: gCal($cals, $options);
-		
-		$this->rsstitle = $options['title'];
-		$this->rssdesc = $options['desc'];
-		$this->rsslink = $options['link'];
+	function Magazine($options = array()) {
+		parent :: gCal($options);
 		
 	} // end gCalWeb()
 	
-	function widgetDisplay() {
+	function display() {
 		$events = $this->events;
-		if (!$events) return '';
+		if (!$events) {
+			return '';
+		}
 		$olddate = '';
-		$displaystring .= '<div class="gw-post slickpanel">';
+		$displaystring .= '<div class="gw-post">';
 
 		foreach($events as $event) {
-
-			$this_id = $event['cal'].'_'.$event['id'];
 			$start = $event['starttime'];
 			// check for new dates
 			$newdate = date('l, n/j/y', $start);
@@ -47,19 +37,34 @@ class gCalWeb extends gCal {
 				$displaystring .= '<div class="gw-date-wrap"><div class="gw-date">' . $newdate . '</div></div>';
 				$olddate = $newdate;
 			}
-			$displaystring .= '<div class="gw-event"><span class="gw-bullet">&nbsp;</span><div class="gw-time">' . date('g:i a', $start) . '</div><div class="gw-title">' . $event['title'];
+			if ($event['isfeatured']) {
+			    $displaystring .= '<div class="gw-featured">';
+			}
+			if ($event['post_link']) {
+			    $displaystring .= '<a href="'.$event['post_link'].'">';
+			}
+			$displaystring .= '<div class="gw-event ' . $event['tag'] . '">';
+			$displaystring .= '<span class="gw-bullet">&nbsp;</span><div class="gw-time">' . date('g:i a', $start) . '</div>';
+			$displaystring .= '<div class="gw-title">' . $event['title'];
 			if ($event['location']) {
 				$displaystring .= ' @ ' . $event['location'];
 			}
-			$displaystring .=  '</div>'; 
-			$displaystring .= '</div>'; // close (.gw-date or .gw-event) 
+			$displaystring .=  '</div>'; //close .gw-title
+			$displaystring .= '</div>'; // close .gw-event 
+			if ($event['post_link']) {
+			    $displaystring .= '</a>';
+			}
+			if ($event['isfeatured']) {
+			    $displaystring .= '</div>';
+			}
 			
+
 		} // end foreach
 		
 		$displaystring .= '</div>'; // close .gw-post
 		return $displaystring;
-	} // end widgetDisplay()
+	} // end display()
 
-} // end gCalWeb
+} // end Magazine
 ?>
 

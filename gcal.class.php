@@ -1,7 +1,7 @@
 <?php
 /* 
  * Google Calendar PHP Framework
- * version 2.0.2 <alpha>
+ * version 2.1
  * 
  * gCal PHP Framework is freely distributable under the terms of an MIT-style license.                                                                              
  * Please visit https://github.com/abeyang/Google-Calendar-PHP for more details.  
@@ -16,25 +16,19 @@
  *		for KAIROS: kairos, kairos1, kairos2, kairos3, kairos4, kairosw
  *
  * =Other Options=
- * 'debug' = verbose options (useful for debugging)
+ * 'debug' = if TRUE, verbose options (useful for debugging)
+ * 'debugtime' = if TRUE, displays total time for gcal.class to finish
  * 'startdate' = starting date in YYYY-MM-DD format (default to 'today')
  * 'numdays' = time frame in days (default = 30): inclusive
  *
- * =TODO=
- * multi-tags per event(?)
  *
 /* ---------------------------------------------------------------------------------- */
-
-define('GCAL_PATH', dirname(__FILE__) . '/');
-// include files
-require_once(GCAL_PATH . 'xml.php');
-require_once(GCAL_PATH . 'CONFIG.php');
 
 class gCal {
 	// ----------------------------------------------------------------------------------
 	// variables
 	// ----------------------------------------------------------------------------------
-	var $version = '2.0.2';
+	var $version = '2.1';
 	
 	var $name;				// name of calendar; for debug purposes only ($NAME in CONFIG.php)
 	var $userid;			// need this to pull specific calendar from Google ($USERID in CONFIG.php)
@@ -67,11 +61,16 @@ class gCal {
 	// initialize
 	// ----------------------------------------------------------------------------------
 	function gCal($options = array()) {
-		$this->name = $GLOBALS['NAME'];
-		$this->userid = $GLOBALS['USERID'];
-		$this->magiccookie = $GLOBALS['MAGICCOOKIE'];
-		if ($GLOBALS['STANDARDTIME'])
-			$this->gcal_suffix = 'T00:00:00' . $GLOBALS['STANDARDTIME'];
+		define('GCAL_PATH', dirname(__FILE__) . '/');
+		// include files
+		require(GCAL_PATH . 'xml.php');
+		require(GCAL_PATH . 'CONFIG.php');
+
+		$this->name = $config['NAME'];
+		$this->userid = $config['USERID'];
+		$this->magiccookie = $config['MAGICCOOKIE'];
+		if ($config['STANDARDTIME'])
+			$this->gcal_suffix = 'T00:00:00' . $config['STANDARDTIME'];
 		else $this->gcal_suffix = 'T00:00:00-08:00';		// default is PST (-08:00)
 	
 		// error check
@@ -91,7 +90,7 @@ class gCal {
 		if ($this->debug) echo 'tags: '.$options['tags'].' <br />';
 
 		// time stuff
-		$this->cal_startdate = $options['startdate'] ? $options['startdate'] : date('Y-m-d', time());
+		$this->cal_startdate = $options['startdate'] ? $options['startdate'] : date('Y-m-d', time() + $config['OFFSETTIME']);
 		$this->cal_starttime = strtotime($this->cal_startdate);
 		$this->gcal_startmin = $this->cal_startdate.$this->gcal_suffix;
 		
@@ -124,6 +123,9 @@ class gCal {
 		}
 		$data = XML_unserialize($xml);
 		
+		// Use the below function to show _everything_ inside $data. For debugging purposes only.
+		// if ($this->debug) print_r($data);
+		
 		$show = $this->shows;
 
 		if ($this->debug) {
@@ -139,6 +141,11 @@ class gCal {
 			foreach($data['feed']['entry'] as $xmlevent) {
 				$this->getEvent($xmlevent, $show, $tagstring);
 			}
+		}
+		
+		if ($this->debug) {
+			echo '<p>Exceptions array: </p>';
+			print_r($this->exceptions);
 		}
 	}  // end getCalendar
 
@@ -225,7 +232,11 @@ class gCal {
 
 		/* get content */
 		$content = $xmlevent['content'];
+		list($pre_open_bracket,$post_open_bracket) = explode('[', $content);
+		list($inside_brackets,$post_close_bracket) = explode(']', $post_open_bracket);
+		$content = $pre_open_bracket.$post_close_bracket;
 		$content = str_replace('&quot;', '"', $content);    // aish. for textile use.
+		$inside_brackets = str_replace('&quot;', '"', $inside_brackets);
 		
 		/* parse start/end times */
 		
@@ -250,6 +261,11 @@ class gCal {
 			// since the parent (recurring) event occurs at the end of xml, exception array should be filled already.
 			// let's check the said exception array!
 			usort($recurrences, sortByTime);
+
+			if ($this->debug) {
+				echo '<p>$recurrences: </p>';
+				print_r($recurrences);
+			}
 			
 			// $recurrences[0] is the earliest time
 			$starttime = $recurrences[0]['starttime'];
@@ -281,7 +297,8 @@ class gCal {
 				'isfeatured' 	=> $isfeatured, 
 				'tag' 		=> $eventtag, 
 				'status'	=> $status, 
-				'showevent' 	=> $showevent
+				'showevent' 	=> $showevent,
+				'post_link'	=> $inside_brackets
 			);
 		
 			// check if this is an exception to a recurring event: if so, fill in a separate array
@@ -292,6 +309,15 @@ class gCal {
 				$this->exceptions[$parentid.'_'.$starttime] = $event;
 				return;
 			}
+			
+			// hateful: some recurring events could have gone by undetected up to this day
+			// (if the numdays doesn't happen to overlap at least its second iteration)
+			// must account for it here.
+			// again, assumes exceptions array is filled out and has the correct event
+			else if ($this->exceptions[$id.'_'.$starttime]) {
+				$event = $this->exceptions[$id.'_'.$starttime];
+			}
+
 		}
 		
 		/* add event to events array */
@@ -350,7 +376,7 @@ class gCal {
 		
 		if ($this->debugspeed) {
 			$finaltime = microtime(true) - $this->debugspeed_start;
-			echo '<p /> TOTAL TIME: ' . $finaltime;
+			echo '<p>TOTAL TIME: ' . $finaltime . '</p>';
 		}
 		
 	} // end main
