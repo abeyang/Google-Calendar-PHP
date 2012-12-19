@@ -24,7 +24,7 @@ This is where Google Calendar PHP comes in. It's a framework that takes in the X
 
 ## Usage
 
-+ [Installing framework onto your site] (mainly for developers)
++ [Installing framework onto your site] -- mainly for developers
 + How to use Google Calendar with the framework: read about the [special syntax]
 
 ---
